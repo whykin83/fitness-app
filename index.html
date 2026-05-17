@@ -1,0 +1,886 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Tennis Comeback</title>
+
+<!-- PWA / iPhone Home Screen -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Tennis">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0e0e0e">
+
+<!-- PWA Manifest inline via data URI -->
+<link rel="manifest" href="data:application/manifest+json,{%22name%22:%22Tennis%20Comeback%22,%22short_name%22:%22Tennis%22,%22start_url%22:%22.%22,%22display%22:%22standalone%22,%22background_color%22:%22%230e0e0e%22,%22theme_color%22:%22%230e0e0e%22}">
+
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0e0e0e; --surface:#161616; --surface2:#1e1e1e;
+  --border:#2a2a2a; --border2:#333;
+  --text:#f0ede8; --muted:#888;
+  --accent:#c8f04e; --accent-dim:rgba(200,240,78,.12); --accent-mid:rgba(200,240,78,.35);
+  --warn:#f0a040; --warn-dim:rgba(240,160,64,.12);
+  --red:#e85c5c; --red-dim:rgba(232,92,92,.12);
+  --blue:#5ca8e8; --blue-dim:rgba(92,168,232,.12);
+  --green:#5ce890; --green-dim:rgba(92,232,144,.12);
+  --r:10px; --rs:6px;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bot: env(safe-area-inset-bottom, 0px);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;overflow:hidden;}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-weight:300;display:flex;flex-direction:column;}
+
+/* ── TOP HEADER ── */
+.header{background:var(--surface);border-bottom:1px solid var(--border);padding:calc(16px + var(--safe-top)) 20px 0;flex-shrink:0;}
+.header-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px;gap:12px;}
+.title-block h1{font-family:'Instrument Serif',serif;font-size:20px;font-weight:400;font-style:italic;line-height:1.2;}
+.title-block p{font-size:11px;color:var(--muted);margin-top:2px;font-family:'DM Mono',monospace;}
+.week-pills{display:flex;gap:5px;align-items:center;}
+.wlabel{font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:.05em;margin-right:4px;}
+.wp{width:26px;height:26px;border-radius:50%;border:1px solid var(--border2);background:transparent;font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center;}
+.wp:hover{border-color:var(--accent);color:var(--accent);}
+.wp.aw{background:var(--accent);color:#0e0e0e;border-color:var(--accent);font-weight:600;}
+.wp.dw{border-color:var(--warn);}
+.wp.dw.aw{background:var(--warn);color:#0e0e0e;border-color:var(--warn);}
+
+/* ── NAV TABS ── */
+.nav{display:flex;overflow-x:auto;scrollbar-width:none;border-bottom:none;}
+.nav::-webkit-scrollbar{display:none;}
+.nt{padding:10px 16px;font-size:13px;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;transition:all .15s;background:none;border-left:none;border-right:none;border-top:none;}
+.nt:hover{color:var(--text);}
+.nt.active{color:var(--accent);border-bottom-color:var(--accent);}
+
+/* ── SCROLL AREA ── */
+.scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;}
+.main{padding:20px 20px calc(20px + var(--safe-bot));max-width:720px;margin:0 auto;}
+
+/* ── PROGRESS BAR ── */
+.pbar-wrap{height:2px;background:var(--border);flex-shrink:0;}
+.pbar{height:100%;background:var(--accent);transition:width .3s;width:0%;}
+
+/* ── PANELS ── */
+.panel{display:none;}
+.panel.active{display:block;}
+
+/* ── STATS ROW ── */
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:18px;}
+.sc{background:var(--surface2);border:1px solid var(--border);border-radius:var(--rs);padding:10px 12px;}
+.sc .sl{font-size:10px;font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:3px;}
+.sc .sv{font-size:18px;font-weight:500;font-family:'DM Mono',monospace;}
+.sc .ss{font-size:10px;color:var(--muted);}
+
+/* ── SECTION LABEL ── */
+.slabel{font-size:10px;font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin:22px 0 9px;padding-bottom:7px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.stag{font-size:10px;font-family:'DM Mono',monospace;padding:2px 7px;border-radius:20px;}
+.tag-a{background:var(--accent-dim);color:var(--accent);}
+.tag-p{background:var(--red-dim);color:var(--red);}
+.tag-t{background:var(--blue-dim);color:var(--blue);}
+.tag-c{background:var(--warn-dim);color:var(--warn);}
+.tag-g{background:var(--green-dim);color:var(--green);}
+
+/* ── PREHAB BLOCK ── */
+.prehab-block{background:var(--blue-dim);border:1px solid rgba(92,168,232,.3);border-radius:var(--r);padding:14px 16px;margin-bottom:16px;}
+.prehab-title{font-size:11px;font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:.07em;color:var(--blue);margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;}
+.prehab-title span{font-size:11px;color:var(--muted);text-transform:none;letter-spacing:0;}
+.pgrid{display:grid;grid-template-columns:1fr 1fr;gap:7px;}
+.pi{display:flex;align-items:flex-start;gap:9px;cursor:pointer;padding:7px 9px;border-radius:var(--rs);border:1px solid transparent;transition:background .12s;-webkit-user-select:none;user-select:none;}
+.pi:hover{background:rgba(92,168,232,.06);}
+.pi.checked{opacity:.5;}
+.pi .chk{width:15px;height:15px;border-radius:3px;border:1px solid rgba(92,168,232,.5);flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center;transition:all .12s;}
+.pi.checked .chk{background:var(--blue);border-color:var(--blue);}
+.pi.checked .chk::after{content:'✓';font-size:9px;color:#0e0e0e;font-weight:700;}
+.pi .pn{font-size:12px;color:var(--text);line-height:1.35;}
+.pi .pd{font-size:10px;font-family:'DM Mono',monospace;color:var(--muted);}
+
+/* ── RPE INFO ── */
+.rpe-info{display:flex;align-items:center;gap:8px;margin-bottom:14px;padding:9px 13px;background:var(--surface2);border-radius:var(--rs);border:1px solid var(--border);}
+.rpe-dot{width:7px;height:7px;border-radius:50%;background:var(--accent);flex-shrink:0;}
+.rpe-info span{font-size:12px;color:var(--muted);font-family:'DM Mono',monospace;}
+.rpe-info strong{color:var(--accent);font-weight:500;}
+
+/* ── EXERCISE ITEM ── */
+.ei{display:flex;align-items:flex-start;gap:13px;padding:11px 3px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .1s;border-radius:4px;-webkit-user-select:none;user-select:none;}
+.ei:last-child{border-bottom:none;}
+.ei:hover{background:rgba(255,255,255,.02);}
+.ei.done{opacity:.4;}
+.exc{width:19px;height:19px;border-radius:50%;border:1.5px solid var(--border2);flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center;transition:all .15s;}
+.ei.done .exc{background:var(--accent);border-color:var(--accent);}
+.ei.done .exc::after{content:'✓';font-size:10px;color:#0e0e0e;font-weight:700;}
+.eb{flex:1;}
+.en{font-size:13px;font-weight:500;color:var(--text);line-height:1.3;margin-bottom:4px;}
+.em{display:flex;flex-wrap:wrap;gap:5px;align-items:center;}
+.es{font-family:'DM Mono',monospace;font-size:11px;background:var(--surface2);color:var(--accent);padding:2px 7px;border-radius:4px;border:1px solid var(--border2);}
+.er{font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);}
+.enote{font-size:11px;color:var(--muted);margin-top:3px;font-style:italic;line-height:1.4;}
+
+/* ── DELOAD BANNER ── */
+.deload-banner{display:none;background:linear-gradient(135deg,var(--warn-dim),transparent);border:1px solid var(--warn);border-radius:var(--r);padding:14px 18px;margin-bottom:16px;}
+.deload-banner.visible{display:block;}
+.deload-banner h3{font-family:'Instrument Serif',serif;font-style:italic;font-size:16px;font-weight:400;color:var(--warn);margin-bottom:5px;}
+.deload-banner p{font-size:12px;color:var(--muted);line-height:1.55;}
+.deload-pills{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px;}
+.deload-pills span{font-size:11px;font-family:'DM Mono',monospace;background:var(--warn-dim);color:var(--warn);padding:3px 9px;border-radius:20px;}
+
+/* ── COMPLETE BANNER ── */
+.done-banner{display:none;text-align:center;padding:22px;background:var(--accent-dim);border:1px solid rgba(200,240,78,.3);border-radius:var(--r);margin-top:20px;}
+.done-banner.visible{display:block;}
+.done-banner h2{font-family:'Instrument Serif',serif;font-style:italic;font-size:22px;color:var(--accent);margin-bottom:5px;}
+.done-banner p{font-size:12px;color:var(--muted);}
+.reset-btn{margin-top:13px;background:transparent;border:1px solid var(--border2);color:var(--muted);font-family:'DM Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.06em;padding:7px 14px;border-radius:20px;cursor:pointer;transition:all .15s;}
+.reset-btn:hover{border-color:var(--red);color:var(--red);}
+
+/* ── DIET TAB ── */
+.macro-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px;}
+.macro-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:14px;text-align:center;}
+.macro-card .mv{font-size:26px;font-weight:500;font-family:'DM Mono',monospace;line-height:1;}
+.macro-card .mu{font-size:11px;color:var(--muted);}
+.macro-card .ml{font-size:11px;color:var(--muted);margin-top:4px;}
+.activity-row{display:grid;gap:9px;margin-bottom:20px;}
+.acard{background:var(--surface2);border:1px solid var(--border);border-radius:var(--rs);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;}
+.acard .al{font-size:13px;color:var(--text);}
+.acard .asub{font-size:11px;color:var(--muted);}
+.acard .av{font-family:'DM Mono',monospace;font-size:15px;color:var(--accent);font-weight:500;text-align:right;}
+.acard .asm{font-size:10px;color:var(--muted);text-align:right;}
+.acard.highlight{border-color:var(--accent-mid);}
+.info-box{background:var(--accent-dim);border:1px solid var(--accent-mid);border-radius:var(--rs);padding:14px 16px;margin-bottom:18px;font-size:13px;line-height:1.65;}
+.info-box strong{color:var(--accent);font-weight:500;}
+.info-box .ib-title{font-family:'DM Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--accent);margin-bottom:7px;}
+.phase-grid{display:grid;gap:8px;}
+.phase-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--rs);padding:12px 14px;}
+.phase-card .pt{font-size:12px;font-weight:500;margin-bottom:3px;}
+.phase-card .pd{font-size:11px;color:var(--muted);line-height:1.5;}
+
+/* ── PROTEIN TAB ── */
+.psearch{width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--rs);padding:9px 14px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;margin-bottom:14px;outline:none;}
+.psearch:focus{border-color:var(--accent);}
+.pcat-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px;}
+.pct{padding:5px 12px;border-radius:20px;border:1px solid var(--border2);font-size:11px;font-family:'DM Mono',monospace;color:var(--muted);cursor:pointer;transition:all .15s;background:transparent;}
+.pct:hover{border-color:var(--accent);color:var(--accent);}
+.pct.active{background:var(--accent);color:#0e0e0e;border-color:var(--accent);}
+.protein-list{display:grid;gap:7px;}
+.pfood{background:var(--surface2);border:1px solid var(--border);border-radius:var(--rs);padding:11px 14px;display:flex;align-items:center;gap:12px;}
+.pfood .pico{font-size:22px;width:36px;text-align:center;flex-shrink:0;}
+.pfood .pinfo{flex:1;}
+.pfood .pname{font-size:13px;font-weight:500;color:var(--text);}
+.pfood .pserving{font-size:11px;color:var(--muted);margin-top:1px;}
+.pfood .ptag{font-size:10px;color:var(--muted);margin-top:2px;font-style:italic;}
+.pfood .pg{font-family:'DM Mono',monospace;font-size:16px;font-weight:500;color:var(--accent);flex-shrink:0;}
+.pfood .pgunit{font-size:10px;color:var(--muted);text-align:right;}
+.hidden{display:none!important;}
+
+/* ── PROGRESS TAB ── */
+.weight-entry-row{display:flex;gap:9px;margin-bottom:16px;align-items:stretch;}
+.weight-input{flex:1;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--rs);padding:10px 14px;color:var(--text);font-family:'DM Mono',monospace;font-size:16px;outline:none;text-align:center;}
+.weight-input:focus{border-color:var(--accent);}
+.log-btn{background:var(--accent);color:#0e0e0e;border:none;border-radius:var(--rs);padding:10px 18px;font-family:'DM Mono',monospace;font-size:12px;font-weight:600;cursor:pointer;transition:opacity .15s;white-space:nowrap;}
+.log-btn:hover{opacity:.85;}
+.chart-wrap{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-bottom:18px;position:relative;}
+.chart-canvas{width:100%;height:180px;}
+.chart-empty{text-align:center;padding:40px 0;color:var(--muted);font-size:13px;}
+.goal-bar-wrap{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-bottom:18px;}
+.gb-label{display:flex;justify-content:space-between;margin-bottom:8px;}
+.gb-label span{font-size:12px;font-family:'DM Mono',monospace;color:var(--muted);}
+.gb-label strong{color:var(--accent);}
+.gb-track{height:8px;background:var(--border);border-radius:10px;overflow:hidden;}
+.gb-fill{height:100%;background:var(--accent);border-radius:10px;transition:width .5s;}
+.log-list{display:grid;gap:7px;}
+.log-entry{background:var(--surface2);border:1px solid var(--border);border-radius:var(--rs);padding:10px 14px;display:flex;align-items:center;justify-content:space-between;}
+.le-date{font-size:12px;color:var(--muted);font-family:'DM Mono',monospace;}
+.le-weight{font-size:15px;font-family:'DM Mono',monospace;font-weight:500;color:var(--text);}
+.le-delta{font-size:11px;font-family:'DM Mono',monospace;padding:2px 7px;border-radius:4px;}
+.delta-good{background:var(--green-dim);color:var(--green);}
+.delta-bad{background:var(--red-dim);color:var(--red);}
+.delta-same{background:var(--surface2);color:var(--muted);}
+.le-del{background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:16px;padding:0 4px;}
+.le-del:hover{color:var(--red);}
+.proto-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:18px;}
+.proto-stat{background:var(--surface2);border:1px solid var(--border);border-radius:var(--rs);padding:10px 12px;}
+.proto-stat .psl{font-size:10px;font-family:'DM Mono',monospace;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;}
+.proto-stat .psv{font-size:18px;font-weight:500;font-family:'DM Mono',monospace;}
+
+/* ── PROTOCOL TAB ── */
+.po-card{background:linear-gradient(135deg,var(--accent-dim),transparent);border:1px solid rgba(200,240,78,.25);border-radius:var(--r);padding:14px 16px;margin-bottom:18px;}
+.po-card h3{font-family:'DM Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--accent);margin-bottom:10px;}
+.po-steps{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.po-step{background:rgba(0,0,0,.3);border-radius:var(--rs);padding:10px 12px;}
+.po-step .num{font-family:'DM Mono',monospace;font-size:18px;font-weight:500;color:var(--accent);line-height:1;margin-bottom:4px;}
+.po-step .lbl{font-size:12px;color:var(--muted);line-height:1.45;}
+.rpe-table{display:grid;gap:7px;margin-bottom:22px;}
+.rpe-row{display:flex;align-items:center;gap:10px;padding:9px 12px;background:var(--surface2);border-radius:var(--rs);border:1px solid var(--border);}
+.rpe-num{font-family:'DM Mono',monospace;font-size:18px;font-weight:500;width:40px;flex-shrink:0;}
+.rpe-desc{font-size:12px;color:var(--muted);}
+.week-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:22px;}
+.wcard{padding:12px 14px;background:var(--surface2);border-radius:var(--rs);border:1px solid var(--border);}
+.wcard .wt{font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px;}
+.wcard .wn{font-size:13px;font-weight:500;margin-bottom:3px;}
+.wcard .wd{font-size:11px;color:var(--muted);line-height:1.45;}
+.wcard.deload-card{background:var(--warn-dim);border-color:rgba(240,160,64,.3);}
+.wcard.deload-card .wt{color:var(--warn);}
+.sched-row{display:flex;gap:10px;align-items:center;padding:8px 12px;background:var(--surface2);border-radius:var(--rs);border:1px solid var(--border);font-size:12px;margin-bottom:6px;}
+.sched-row .sd{font-family:'DM Mono',monospace;color:var(--accent);width:30px;flex-shrink:0;}
+.sched-row .sd.rest{color:var(--muted);}
+.rule-card{padding:11px 14px;background:var(--surface2);border-radius:var(--rs);border-left:3px solid var(--accent);font-size:12px;line-height:1.6;margin-bottom:7px;}
+.rule-card.warn-rule{border-left-color:var(--warn);}
+
+@media(max-width:480px){
+  .stats-row{grid-template-columns:repeat(2,1fr);}
+  .macro-grid{grid-template-columns:repeat(3,1fr);}
+  .pgrid{grid-template-columns:1fr;}
+  .po-steps{grid-template-columns:1fr;}
+  .week-grid{grid-template-columns:1fr;}
+  .proto-grid{grid-template-columns:repeat(2,1fr);}
+  .main{padding:16px 14px calc(16px + var(--safe-bot));}
+}
+</style>
+</head>
+<body>
+
+<div class="pbar-wrap"><div class="pbar" id="pbar"></div></div>
+
+<div class="header">
+  <div class="header-top">
+    <div class="title-block">
+      <h1>Tennis Comeback</h1>
+      <p>188cm · 94kg → 83kg · 43yo · 3 months</p>
+    </div>
+    <div class="week-pills">
+      <span class="wlabel">Wave</span>
+      <button class="wp aw" data-w="1" onclick="setWeek(1)">1</button>
+      <button class="wp" data-w="2" onclick="setWeek(2)">2</button>
+      <button class="wp" data-w="3" onclick="setWeek(3)">3</button>
+      <button class="wp dw" data-w="4" onclick="setWeek(4)">D</button>
+    </div>
+  </div>
+  <nav class="nav">
+    <button class="nt active" data-tab="day1" onclick="showTab('day1')">Day 1</button>
+    <button class="nt" data-tab="day2" onclick="showTab('day2')">Day 2</button>
+    <button class="nt" data-tab="day3" onclick="showTab('day3')">Day 3</button>
+    <button class="nt" data-tab="diet" onclick="showTab('diet')">Diet</button>
+    <button class="nt" data-tab="protein" onclick="showTab('protein')">Protein</button>
+    <button class="nt" data-tab="progress" onclick="showTab('progress')">Progress</button>
+    <button class="nt" data-tab="protocol" onclick="showTab('protocol')">Protocol</button>
+  </nav>
+</div>
+
+<div class="scroll">
+<div class="main">
+
+<!-- ═══════════════════════ DAY 1 ═══════════════════════ -->
+<div class="panel active" id="panel-day1">
+  <div class="deload-banner" id="db-day1"><h3>Deload Week — Recovery Mode</h3><p>Same exercises, 50% load, RPE 4–5. Flush fatigue, not your gains.</p><div class="deload-pills"><span>50% load</span><span>Same reps</span><span>RPE 4–5</span><span>No grinding</span></div></div>
+  <div class="stats-row">
+    <div class="sc"><div class="sl">Day</div><div class="sv">1</div><div class="ss">Upper</div></div>
+    <div class="sc"><div class="sl">Time</div><div class="sv">80<span style="font-size:11px">m</span></div><div class="ss">incl. prehab</div></div>
+    <div class="sc"><div class="sl">Focus</div><div class="sv" style="font-size:12px;margin-top:4px">Hypertrophy</div><div class="ss">Push power</div></div>
+    <div class="sc"><div class="sl">RPE</div><div class="sv" style="color:var(--accent)">7–9</div><div class="ss">working sets</div></div>
+  </div>
+  <div class="prehab-block">
+    <div class="prehab-title">Prehab — 10 min <span>Complete before lifting</span></div>
+    <div class="pgrid">
+      <div class="pi" onclick="togglePre(this)"><div class="chk"></div><div><div class="pn">Band pull-aparts</div><div class="pd">3×20 · rotator cuff</div></div></div>
+      <div class="pi" onclick="togglePre(this)"><div class="chk"></div><div><div class="pn">External shoulder rotations</div><div class="pd">3×15 each · light band</div></div></div>
+      <div class="pi" onclick="togglePre(this)"><div class="chk"></div><div><div class="pn">Face pulls (warm-up)</div><div class="pd">2×20 · very light</div></div></div>
+      <div class="pi" onclick="togglePre(this)"><div class="chk"></div><div><div class="pn">Arm circles + cross-body stretch</div><div class="pd">60 sec each direction</div></div></div>
+    </div>
+  </div>
+  <div class="rpe-info"><div class="rpe-dot"></div><span>Target <strong>RPE 7–9</strong> on working sets. Could do 1–3 more reps but choose not to.</span></div>
+  <div class="slabel">Chest & Shoulders <span class="stag tag-a">Aesthetic priority</span></div>
+  <div class="elist">
+    <div class="ei" onclick="togEx(this)"><div class="exc"></div><div class="eb"><div class="en">Incline dumbbell press</div><div class="em"><span class="es">4 × 8–12</span><span class="er">RPE 8</span></div><div class="enote">Upper chest development. Add weight when you hit 12 reps for 2 consecutive sessions.</div></div></div>
+    <div class="ei" onclick="togEx(this)"><div class="exc"></div><div class="eb"><div class="en">Flat dumbbell press</div><div class="em"><span class="es">3 × 10–12</span><span class="er">RPE 7–8</span></div><div class="enote">Pause 1 sec at bottom for max stretch.</div></div></div>
+    <div class="ei" onclick="togEx(this)"><div class="exc"></div><div class="eb"><div class="en">Overhead dumbbell press</div><div class="em"><span class="es">4 × 8–10</span><span class="er">RPE 8</span></div><div class="enote">Sit upright, brace core. Primary shoulder mass builder.</div></div></div>
+    <div class="ei" onclick="togEx(this)"><div class="exc"></div><div class="eb"><div class="en">Lateral raises</div><div class="em"><span class="es">4 × 12–15</span><span class="er">RPE 7</span></div><div class="enote">Critical for V-taper width. Lead with elbows, slow negative.</div></div></div>
+  </div>
+  <div class="slabel">Back — V-Taper <span class="stag tag-a">Width focus</span></div>
+  <div class="elist">
+    <div class="ei" onclick="togEx(this)"><div class="exc"></div><div class="eb"><div class="en">Pull-ups or lat pulldowns (wide grip)</div><div class="em"><span class="es">4 × 8–10</span><span class="er">RPE 8–9</span></div><div class="enote">#1 V-taper exercise. Dead-hang at bottom. Add weight if 10 reps feel easy.</div></div></div>
+    <div class="ei" onclick="togEx(this)"><div class="exc"></div><div class="eb"><div class="en">Cable rows (close grip)</div><div class="em"><span class="es">3 × 10–12</span><span class="er">RPE 7–8</span></div><div class="enote">Back thickness. Initiate with elbows. Pause at full contraction.</div></div></div>
+    <div class="ei" onclick="togEx(this)"><div class="exc"></div><div class="eb"><div class="en">Single-arm dumbbell rows</div><div class="em"><span class="es">3 × 10 each</span><span class="er">RPE 7–8</span></div><div class="enote">Corrects left-right imbalance — important for tennis groundstroke power.</div></div></div>
+    <div class="ei" onclick="togEx(this)"><div class="exc"></div><div class="eb"><div class="en">Rear delt flies / reverse pec deck</div><div class="em"><span class="es">3 × 15</span><span class="er">RPE 6–7</span></div><div class="enote">Posterior chain — injury prevention + 3D shoulder aesthetics.</div></div></div>
+  </div>
+  <div class="slabel">Arms <span class="stag tag-a">Definition</span></div>
+  <div class="elist">
+    <div class="ei" onclick="togEx(this)"><div class="exc"></div><div class="eb"><div class="en">EZ-bar curls</div><div class="em"><span class="es">3 × 10–12</span><span class="er">RPE 7–8</span></div></div></div>
+    <div class="ei" onclick="togEx(this)"><div class="exc"></div><div class="eb"><div class="en">Overhead tricep extension</div><div class="em"><span class="es">3 × 10–12</span><span class="er">RPE 7–8</span></div><div class="enote">Hits the long head — biggest and most visible tricep muscle.</div></div></div>
+    <div class="ei" onclick="togEx(this)"><div class="exc"></div><div class="eb"><div class="en">Hammer curls</div><div class="em"><span class="es">2 × 12</span><span class="er">RPE 7</span></div></div></div>
+    <div class="ei" onclick="togEx(this)"><div class="exc"></div><div class="eb"><div class="en">Cable tricep pushdowns</div><div class="em"><span class="es">2 × 15</span><span class="er">RPE 6–7</span></div></div></div>
+  </div>
+  <div class="slabel">Core <span class="stag tag-c">Anti-rotation</span></div>
+  <div class="elist">
+    <div class="ei" onclick="togEx(this)"><div class="exc"></div><div class="eb"><div class="en">Hanging leg raises</div><div class="em"><span class="es">3 × 12–15</span><span class="er">RPE 7</span></div><div class="enote">Lower abs. Control the descent.</div></div></div>
+    <div class="ei" onclick="togEx(this)"><div class="exc"></div><div class="eb"><div class="en">Dead bugs</div><div class="em"><span class="es">3 × 12 each side</span><span class="er">RPE 6</span></div><div class="enote">Anti-rotation stability — improves serve and groundstroke power.</div></div></div>
+    <div class="ei" onclick="togEx(this)"><div class="exc"></div><div class="eb"><div class="en">Cable crunches</div><div class="em"><span class="es">3 × 15–20</span><span class="er">RPE 6–7</span></div></div></div>
+  </div>
+  <div class="done-banner" id="done-day1"><h2>Day 1 complete.</h2><p>Log your weights. Hit your protein. Sleep 7–8 hours.</p><button class="reset-btn" onclick="resetDay('day1')">Clear session</button></div>
+</div>
+
+<!-- ═══════════════════════ DAY 2 ═══════════════════════ -->
+<div class="panel" id="panel-day2">
+  <div class="deload-banner" id="db-day2"><h3>Deload Week — Recovery Mode</h3><p>Explosive movements still performed — 50% effort. Focus on movement quality.</p><div class="deload-pills"><span>50% load</span><span>Plyos 50%</span><span>RPE 4–5</span><span>No max effort</span></div></div>
+  <div class="stats-row">
+    <div class="sc"><div class="sl">Day</div><div class="sv">2</div><div class="ss">Lower+Power</div></div>
+    <div class="sc"><div class="sl">Time</div><div class="sv">75<span style="font-size:11px">m</span></div><div class="ss">incl. prehab</div></div>
+    <div class="sc"><div class="sl">Focus</div><div class="sv" style="font-size:12px;margin-top:4px">Strength</div><div class="ss">Court power</div></div>
+    <div class="sc"><div class="sl">RPE</div><div class="sv" style="color:var(--accent)">7–9</div><div class="ss">working sets</div></div>
+  </div>
+  <div class="prehab-block">
+    <div class="prehab-title">Prehab — 10 min <span>Hip flexors + knee prep</span></div>
+    <div class="pgrid">
+      <div class="pi" onclick="togglePre(this)"><div class="chk"></div><div><div class="pn">Hip flexor stretch (couch stretch)</div><div class="pd">60 sec each side</div></div></div>
+      <div class="pi" onclick="togglePre(this)"><div class="chk"></div><div><div class="pn">Glute bridges</div><div class="pd">2×20 · bodyweight</div></div></div>
+      <div class="pi" onclick="togglePre(this)"><div class="chk"></div><div><div class="pn">Clamshells (band)</div><div class="pd">2×20 each · hip stability</div></div></div>
+      <div class="pi" onclick="togglePre(this)"><div class="chk"></div><div><div class="pn">Ankle circles + calf raises</div><div class="pd">30 sec + 2×15 bodyweight</div></div></div>
+    </div>
+  </div>
+  <div class="rpe-info"><div class="rpe-dot"></div><span>Compounds: <strong>RPE 8–9</strong>. Isolation: <strong>RPE 7</strong>. Plyos: full effort, 90 sec rest.</span></div>
+  <div class="slabel">Strength Foundation <span class="stag tag-p">Compound first</span></div>
+  <div class="elist">
+    <div class="ei" onclick="togEx(this)"><div class="exc"></div><div class="eb"><div class="en">Barbell back squat or trap bar deadlift</div><div class="em"><span class="es">4 × 6–8</span><span class="er">RPE 8–9</span></div><div class="enote">Heaviest set of the week. Add 2.5kg when you hit 8 reps for 2 sessions. Alternate monthly.</div></div></div>
+    <div class="ei" onclick="togEx(this)"><div class="exc"></div><div class="eb"><div class="en">Romanian deadlifts</div><div class="em"><span class="es">3 × 8–10</span><span class="er">RPE 7–8</span></div><div class="enote">Hamstring/glute development. Hip hinge with soft knees — feel the stretch at the bottom.</div></div></div>
+    <div class="ei" onclick="togEx(this)"><div class="exc"></div><div class="eb"><div class="en">Bulgarian split squats</div><div class="em"><span class="es">3 × 10 each leg</span><span class="er">RPE 8</span></div><div class="enote">Glute/quad definition + fixes leg strength imbalances.</div></div></div>
+  </div>
+  <div class="slabel">Tennis-Specific Power <span class="stag tag-t">Court carry-over</span></div>
+  <div class="elist">
+    <div class="ei" onclick="togEx(this)"><div class="exc"></div><div class="eb"><div class="en">Box jumps</div><div class="em"><span class="es">3 × 8</span><span class="er">Max effort</span></div><div class="enote">Full effort every rep. Step down — don't jump down. 90 sec rest.</div></div></div>
+    <div class="ei" onclick="togEx(this)"><div class="exc"></div><div class="eb"><div class="en">Lateral bounds</div><div class="em"><span class="es">3 × 8 each side</span><span class="er">Max effort</span></div><div class="enote">Single-leg push-off mimics first-step movement on court.</div></div></div>
+    <div class="ei" onclick="togEx(this)"><div class="exc"></div><div class="eb"><div class="en">Walking lunges (weighted)</div><div class="em"><span class="es">3 × 12 each leg</span><span class="er">RPE 7</span></div></div></div>
+  </div>
+  <div class="slabel">Calves <span class="stag tag-a">Often neglected</span></div>
+  <div class="elist">
+    <div class="ei" onclick="togEx(this)"><div class="exc"></div><div class="eb"><div class="en">Standing calf raises</div><div class="em"><span class="es">4 × 15–20</span><span class="er">RPE 7</span></div><div class="enote">Full range — pause at top and bottom. Calves respond to volume and stretch.</div></div></div>
+    <div class="ei" onclick="togEx(this)"><div class="exc"></div><div class="eb"><div class="en">Seated calf raises</div><div class="em"><span class="es">3 × 15–20</span><span class="er">RPE 7</span></div><div class="enote">Targets soleus. Different stimulus from standing version.</div></div></div>
+  </div>
+  <div class="slabel">Core — Anti-Rotation <span class="stag tag-c">Tennis specific</span></div>
+  <div class="elist">
+    <div class="ei" onclick="togEx(this)"><div class="exc"></div><div class="eb"><div class="en">Plank shoulder taps</div><div class="em"><span class="es">3 × 20 total</span><span class="er">RPE 6</span></div><div class="enote">Anti-rotation — keep hips square. Slow and deliberate.</div></div></div>
+    <div class="ei" onclick="togEx(this)"><div class="exc"></div><div class="eb"><div class="en">Plank walk-outs</div><div class="em"><span class="es">3 × 10</span><span class="er">RPE 7</span></div><div class="enote">Anti-extension. Walk hands out until spine is challenged, walk back in.</div></div></div>
+    <div class="ei" onclick="togEx(this)"><div class="exc"></div><div class="eb"><div class="en">Plank hold</div><div class="em"><span class="es">3 × 60 sec</span><span class="er">RPE 7</span></div></div></div>
+  </div>
+  <div class="done-banner" id="done-day2"><h2>Day 2 complete.</h2><p>Stretch your hip flexors. Eat your protein. 48 hrs before Day 3.</p><button class="reset-btn" onclick="resetDay('day2')">Clear session</button></div>
+</div>
+
+<!-- ═══════════════════════ DAY 3 ═══════════════════════ -->
+<div class="panel" id="panel-day3">
+  <div class="deload-banner" id="db-day3"><h3>Deload Week — Recovery Mode</h3><p>Last session of the wave. 50% load. Next session starts a fresh block at a higher baseline.</p><div class="deload-pills"><span>50% load</span><span>Full ROM</span><span>RPE 4–5</span><span>Feel good</span></div></div>
+  <div class="stats-row">
+    <div class="sc"><div class="sl">Day</div><div class="sv">3</div><div class="ss">V-Taper</div></div>
+    <div class="sc"><div class="sl">Time</div><div class="sv">75<span style="font-size:11px">m</span></div><div class="ss">incl. prehab</div></div>
+    <div class="sc"><div class="sl">Focus</div><div class="sv" style="font-size:12px;margin-top:4px">Shoulders</div><div class="ss">Arms · Weak pts</div></div>
+    <div class="sc"><div class="sl">RPE</div><div class="sv" style="color:var(--accent)">7–8</div><div class="ss">pump work</div></div>
+  </div>
+  <div class="prehab-block">
+    <div class="prehab-title">Prehab — 10 min <span>Full body mobility</span></div>
+    <div class="pgrid">
+      <div class="pi" onclick="togglePre(this)"><div class="chk"></div><div><div class="pn">Band pull-aparts</div><div class="pd">3×20 · shoulder health</div></div></div>
+      <div class="pi" onclick="togglePre(this)"><div class="chk"></div><div><div class="pn">Hip flexor stretch</div><div class="pd">60 sec each side</div></div></div>
+      <div class="pi" onclick="togglePre(this)"><div class="chk"></div><div><div class="pn">Thoracic spine rotations</div><div class="pd">10 each side · serve rotation</div></div></div>
+      <div class="pi" onclick="togglePre(this)"><div class="chk"></div><div><div class="pn">Wrist circles + forearm stretch</div><div class="pd">30 sec each direction</div></div></div>
+    </div>
+  </div>
+  <div class="rpe-info"><div class="rpe-dot"></div><span>Day 3 is a <strong>pump / hypertrophy</strong> day. RPE 7–8. Higher reps, 60–75 sec rest. No max lifts.</span></div>
+  <div class="slabel">Shoulders — V-Taper Priority <span class="stag tag-a">15–20 sets/wk target</span></div>
+  <div class="elist">
+    <div class="ei" onclick="togEx(this)"><div class="exc"></div><div class="eb"><div class="en">Dumbbell shoulder press</div><div class="em"><span class="es">4 × 10–12</span><span class="er">RPE 7–8</span></div><div class="enote">Combined with Day 1 overhead press = 2× shoulder stimulus/week. Minimum for width development.</div></div></div>
+    <div class="ei" onclick="togEx(this)"><div class="exc"></div><div class="eb"><div class="en">Lateral raises — drop set</div><div class="em"><span class="es">4 × 12–15 + drop</span><span class="er">RPE 8 → failure</span></div><div class="enote">Most important exercise for V-taper. Hit 15 reps → drop 30% weight → rep out. Always slow negative.</div></div></div>
+    <div class="ei" onclick="togEx(this)"><div class="exc"></div><div class="eb"><div class="en">Rear delt cable flies</div><div class="em"><span class="es">3 × 15</span><span class="er">RPE 7</span></div><div class="enote">3D shoulder look + rotator cuff health. High cable, squeeze at end.</div></div></div>
+    <div class="ei" onclick="togEx(this)"><div class="exc"></div><div class="eb"><div class="en">Face pulls</div><div class="em"><span class="es">3 × 20</span><span class="er">RPE 6</span></div><div class="enote">Rope attachment, pull to forehead level, elbows flared. Prehab volume.</div></div></div>
+  </div>
+  <div class="slabel">Back Width (Second Hit) <span class="stag tag-a">Lat width</span></div>
+  <div class="elist">
+    <div class="ei" onclick="togEx(this)"><div class="exc"></div><div class="eb"><div class="en">Wide-grip pull-ups</div><div class="em"><span class="es">3 × max reps</span><span class="er">RPE 8–9</span></div><div class="enote">Second lat stimulus of the week. Dead hang at bottom. Add weight if 10+ reps feel easy.</div></div></div>
+    <div class="ei" onclick="togEx(this)"><div class="exc"></div><div class="eb"><div class="en">Bent-over rows</div><div class="em"><span class="es">3 × 8–10</span><span class="er">RPE 7–8</span></div><div class="enote">Back thickness. Pull to lower sternum for lat emphasis.</div></div></div>
+  </div>
+  <div class="slabel">Arms — Weak Point Pump <span class="stag tag-a">Definition</span></div>
+  <div class="elist">
+    <div class="ei" onclick="togEx(this)"><div class="exc"></div><div class="eb"><div class="en">Superset: EZ-bar curls + skull crushers</div><div class="em"><span class="es">3 × 12 each</span><span class="er">RPE 7–8</span></div><div class="enote">No rest between. 75 sec rest after the superset.</div></div></div>
+    <div class="ei" onclick="togEx(this)"><div class="exc"></div><div class="eb"><div class="en">Superset: Hammer curls + cable pushdowns</div><div class="em"><span class="es">3 × 12 each</span><span class="er">RPE 7</span></div><div class="enote">Brachialis + outer tricep. Pump is the goal here.</div></div></div>
+    <div class="ei" onclick="togEx(this)"><div class="exc"></div><div class="eb"><div class="en">Cable curls (slow, blood flow)</div><div class="em"><span class="es">2 × 15</span><span class="er">RPE 6</span></div><div class="enote">Finisher. 3-second negative. Light weight, feel every rep.</div></div></div>
+  </div>
+  <div class="slabel">Core Finisher <span class="stag tag-c">Rotational strength</span></div>
+  <div class="elist">
+    <div class="ei" onclick="togEx(this)"><div class="exc"></div><div class="eb"><div class="en">Cable woodchops (high to low)</div><div class="em"><span class="es">3 × 12 each side</span><span class="er">RPE 7</span></div><div class="enote">Directly trains tennis groundstroke rotation. Control the return.</div></div></div>
+    <div class="ei" onclick="togEx(this)"><div class="exc"></div><div class="eb"><div class="en">Russian twists</div><div class="em"><span class="es">3 × 20 each side</span><span class="er">RPE 6</span></div></div></div>
+    <div class="ei" onclick="togEx(this)"><div class="exc"></div><div class="eb"><div class="en">Long-lever plank</div><div class="em"><span class="es">3 × 45 sec</span><span class="er">RPE 7</span></div><div class="enote">Hands further forward than standard — significantly harder anti-extension challenge.</div></div></div>
+  </div>
+  <div class="done-banner" id="done-day3"><h2>Wave complete.</h2><p id="wave-msg">Rest. Deload next week. Do not skip it.</p><button class="reset-btn" onclick="resetDay('day3')">Clear session</button></div>
+</div>
+
+<!-- ═══════════════════════ DIET ═══════════════════════ -->
+<div class="panel" id="panel-diet">
+  <div class="info-box">
+    <div class="ib-title">Your 3-month mission</div>
+    <strong>94kg → 83kg in 13 weeks.</strong> That's 11kg, requiring an average deficit of ~935 kcal/day. Aggressive but achievable with 3 gym sessions/week, daily activity, and strict protein adherence. Your athletic background gives you a higher muscle base — fat loss will be faster than for a sedentary person of the same weight.
+  </div>
+
+  <div class="slabel">Your numbers — daily calorie targets</div>
+  <div class="activity-row">
+    <div class="acard">
+      <div><div class="al">Sedentary</div><div class="asub">Desk work, no exercise</div></div>
+      <div><div class="av">1,350</div><div class="asm">kcal/day target</div></div>
+    </div>
+    <div class="acard">
+      <div><div class="al">1–2 active days/week</div><div class="asub">Light gym, some walking</div></div>
+      <div><div class="av">1,680</div><div class="asm">kcal/day target</div></div>
+    </div>
+    <div class="acard highlight">
+      <div><div class="al" style="color:var(--accent)">3–4 active days/week ✓</div><div class="asub">Your situation: gym + tennis</div></div>
+      <div><div class="av">2,000</div><div class="asm">kcal/day target</div></div>
+    </div>
+  </div>
+
+  <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;margin-bottom:18px;font-size:12px;color:var(--muted);line-height:1.7;">
+    <strong style="color:var(--text);font-weight:500;">How these were calculated</strong><br>
+    BMR (Mifflin-St Jeor, male 43 @ 188cm/94kg) = <span style="color:var(--accent);font-family:'DM Mono',monospace;">1,905 kcal</span><br>
+    TDEE at 3–4 active days (×1.55) = <span style="color:var(--accent);font-family:'DM Mono',monospace;">2,953 kcal</span><br>
+    Required deficit for 11kg in 13 weeks = <span style="color:var(--warn);font-family:'DM Mono',monospace;">−935 kcal/day</span><br>
+    Daily target = 2,953 − 935 = <span style="color:var(--accent);font-family:'DM Mono',monospace;">2,018 → rounded to 2,000 kcal</span>
+  </div>
+
+  <div class="slabel">Daily macro targets</div>
+  <div class="macro-grid">
+    <div class="macro-card">
+      <div class="mv" style="color:var(--accent)">178<span style="font-size:13px">g</span></div>
+      <div class="mu">protein</div>
+      <div class="ml">712 kcal · 36%</div>
+    </div>
+    <div class="macro-card">
+      <div class="mv" style="color:var(--blue)">188<span style="font-size:13px">g</span></div>
+      <div class="mu">carbs</div>
+      <div class="ml">752 kcal · 38%</div>
+    </div>
+    <div class="macro-card">
+      <div class="mv" style="color:var(--warn)">60<span style="font-size:13px">g</span></div>
+      <div class="mu">fat</div>
+      <div class="ml">540 kcal · 27%</div>
+    </div>
+  </div>
+
+  <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--rs);padding:12px 14px;margin-bottom:20px;font-size:12px;color:var(--muted);line-height:1.65;">
+    <strong style="color:var(--text);font-weight:500;">Protein logic.</strong> 1.9g × 94kg = 178g/day. This is the minimum to preserve muscle mass during an aggressive cut. On days you miss the target, your body has no choice but to break down muscle for energy — this is why protein is the non-negotiable macro.
+  </div>
+
+  <div class="slabel">13-week phase plan</div>
+  <div class="phase-grid">
+    <div class="phase-card">
+      <div class="pt" style="color:var(--accent)">Weeks 1–4 · Foundation cut</div>
+      <div class="pd">Strict 2,000 kcal. 178g protein daily. Body adapts to caloric deficit. Expect 0.8–1.2kg/week loss. Weight may fluctuate first 2 weeks due to water and glycogen.</div>
+    </div>
+    <div class="phase-card">
+      <div class="pt" style="color:var(--accent)">Weeks 5–8 · Momentum phase</div>
+      <div class="pd">Same calorie target. Add carb cycling on workout days (+30g carbs pre/post gym, remove from non-training days). Fat loss accelerates as body adapts.</div>
+    </div>
+    <div class="phase-card">
+      <div class="pt" style="color:var(--accent)">Weeks 9–13 · Final push</div>
+      <div class="pd">If stalling (no loss for 10+ days), reduce by 150 kcal. Keep protein at 178g. This is where you cross 85kg territory. Tennis fitness peaks here.</div>
+    </div>
+    <div class="phase-card" style="border-color:rgba(240,160,64,.3);background:var(--warn-dim);">
+      <div class="pt" style="color:var(--warn)">Every 4th week · Diet break</div>
+      <div class="pd">Eat at maintenance (~2,953 kcal) for 7 days. Hormones reset, muscle synthesis increases. This is not cheating — it's strategy. You will come back leaner.</div>
+    </div>
+  </div>
+
+  <div class="slabel">Eating out rules (Malaysia context)</div>
+  <div style="display:grid;gap:7px;padding-bottom:8px;">
+    <div class="rule-card" style="border-left-color:var(--blue);">Choose protein first. Double chicken at nasi campur, extra fish at hawker stalls. The protein decision drives everything else.</div>
+    <div class="rule-card" style="border-left-color:var(--blue);">Skip sauces and gravies where possible — they are where the hidden calories live. Ask for rice on the side so you control the portion.</div>
+    <div class="rule-card" style="border-left-color:var(--blue);">Drink only water, black coffee, or teh-o-kosong. Teh tarik is 150+ kcal per glass. Three drinks/day = 450 hidden calories.</div>
+    <div class="rule-card" style="border-left-color:var(--warn);">On gym days: eat your highest-carb meal 1–2 hours pre-workout. Rice or bread before training, not before bed.</div>
+  </div>
+</div>
+
+<!-- ═══════════════════════ PROTEIN ═══════════════════════ -->
+<div class="panel" id="panel-protein">
+  <div class="info-box">
+    <div class="ib-title">Daily protein target</div>
+    <strong>178g protein per day.</strong> The number shown per food item is grams of protein per typical serving. Track your running total across meals — hit 178g and you're done. Supplement only what you can't get from food.
+  </div>
+
+  <input class="psearch" type="text" placeholder="Search protein sources..." oninput="filterProteins(this.value)" />
+
+  <div class="pcat-tabs">
+    <button class="pct active" data-cat="all" onclick="filterCat('all',this)">All</button>
+    <button class="pct" data-cat="meat" onclick="filterCat('meat',this)">Meat</button>
+    <button class="pct" data-cat="fish" onclick="filterCat('fish',this)">Fish & Seafood</button>
+    <button class="pct" data-cat="eggs" onclick="filterCat('eggs',this)">Eggs & Dairy</button>
+    <button class="pct" data-cat="plant" onclick="filterCat('plant',this)">Plant</button>
+    <button class="pct" data-cat="supp" onclick="filterCat('supp',this)">Supplements</button>
+    <button class="pct" data-cat="my" onclick="filterCat('my',this)">Malaysian Meals</button>
+  </div>
+
+  <div class="protein-list" id="proteinList">
+    <!-- Meat -->
+    <div class="pfood" data-cat="meat" data-name="chicken breast"><div class="pico">🍗</div><div class="pinfo"><div class="pname">Chicken breast</div><div class="pserving">100g cooked / ~1 palm-size piece</div><div class="ptag">Lean · Best protein-per-calorie ratio</div></div><div><div class="pg">31g</div><div class="pgunit">protein</div></div></div>
+    <div class="pfood" data-cat="meat" data-name="chicken thigh"><div class="pico">🍗</div><div class="pinfo"><div class="pname">Chicken thigh (skinless)</div><div class="pserving">100g cooked</div><div class="ptag">More flavour, slightly more fat</div></div><div><div class="pg">26g</div><div class="pgunit">protein</div></div></div>
+    <div class="pfood" data-cat="meat" data-name="beef lean steak"><div class="pico">🥩</div><div class="pinfo"><div class="pname">Lean beef (sirloin/topside)</div><div class="pserving">100g cooked</div><div class="ptag">High in creatine and zinc — recovery benefits</div></div><div><div class="pg">27g</div><div class="pgunit">protein</div></div></div>
+    <div class="pfood" data-cat="meat" data-name="pork loin"><div class="pico">🥩</div><div class="pinfo"><div class="pname">Pork loin / tenderloin</div><div class="pserving">100g cooked</div><div class="ptag">Lean cut — avoid pork belly (high fat)</div></div><div><div class="pg">27g</div><div class="pgunit">protein</div></div></div>
+    <div class="pfood" data-cat="meat" data-name="turkey"><div class="pico">🦃</div><div class="pinfo"><div class="pname">Turkey breast</div><div class="pserving">100g cooked</div><div class="ptag">Very lean. Common at Cold Storage / Village Grocer</div></div><div><div class="pg">30g</div><div class="pgunit">protein</div></div></div>
+    <div class="pfood" data-cat="meat" data-name="char siu roast pork"><div class="pico">🍖</div><div class="pinfo"><div class="pname">Char siu (roast pork BBQ)</div><div class="pserving">100g</div><div class="ptag">Moderate fat + sugar glaze. OK occasionally</div></div><div><div class="pg">22g</div><div class="pgunit">protein</div></div></div>
+    <!-- Fish -->
+    <div class="pfood" data-cat="fish" data-name="tuna canned"><div class="pico">🐟</div><div class="pinfo"><div class="pname">Canned tuna (in water)</div><div class="pserving">1 can / 185g drained</div><div class="ptag">Best value protein. Keep 3 cans in your bag</div></div><div><div class="pg">40g</div><div class="pgunit">protein</div></div></div>
+    <div class="pfood" data-cat="fish" data-name="salmon"><div class="pico">🐟</div><div class="pinfo"><div class="pname">Salmon (fillet)</div><div class="pserving">150g cooked</div><div class="ptag">High omega-3 — reduces exercise inflammation</div></div><div><div class="pg">34g</div><div class="pgunit">protein</div></div></div>
+    <div class="pfood" data-cat="fish" data-name="tilapia siakap"><div class="pico">🐠</div><div class="pinfo"><div class="pname">Tilapia / Siakap (steamed)</div><div class="pserving">1 medium fillet ~150g</div><div class="ptag">Common at Chinese kopitiam. Extremely lean.</div></div><div><div class="pg">33g</div><div class="pgunit">protein</div></div></div>
+    <div class="pfood" data-cat="fish" data-name="shrimp prawn"><div class="pico">🦐</div><div class="pinfo"><div class="pname">Prawns / shrimp</div><div class="pserving">100g cooked (about 10–12 medium)</div><div class="ptag">Very lean. Great for high-protein hawker meals</div></div><div><div class="pg">24g</div><div class="pgunit">protein</div></div></div>
+    <div class="pfood" data-cat="fish" data-name="squid sotong"><div class="pico">🦑</div><div class="pinfo"><div class="pname">Sotong (squid)</div><div class="pserving">100g cooked</div><div class="ptag">Low fat, surprisingly high protein</div></div><div><div class="pg">18g</div><div class="pgunit">protein</div></div></div>
+    <div class="pfood" data-cat="fish" data-name="sardines"><div class="pico">🐟</div><div class="pinfo"><div class="pname">Canned sardines</div><div class="pserving">1 can / 100g</div><div class="ptag">Omega-3 rich. Bones provide calcium too.</div></div><div><div class="pg">21g</div><div class="pgunit">protein</div></div></div>
+    <!-- Eggs & Dairy -->
+    <div class="pfood" data-cat="eggs" data-name="eggs whole"><div class="pico">🥚</div><div class="pinfo"><div class="pname">Whole eggs</div><div class="pserving">2 large eggs</div><div class="ptag">Complete protein with all amino acids. 1 egg = 6g</div></div><div><div class="pg">12g</div><div class="pgunit">protein</div></div></div>
+    <div class="pfood" data-cat="eggs" data-name="egg whites"><div class="pico">🥚</div><div class="pinfo"><div class="pname">Egg whites</div><div class="pserving">4 whites</div><div class="ptag">Zero fat, pure protein. Add 2 yolks for nutrients</div></div><div><div class="pg">14g</div><div class="pgunit">protein</div></div></div>
+    <div class="pfood" data-cat="eggs" data-name="greek yogurt"><div class="pico">🥛</div><div class="pinfo"><div class="pname">Greek yogurt (plain, non-fat)</div><div class="pserving">200g / 1 small tub</div><div class="ptag">Available at Village Grocer / Jaya Grocer</div></div><div><div class="pg">20g</div><div class="pgunit">protein</div></div></div>
+    <div class="pfood" data-cat="eggs" data-name="cottage cheese"><div class="pico">🧀</div><div class="pinfo"><div class="pname">Low-fat cottage cheese</div><div class="pserving">200g</div><div class="ptag">Slow-digesting casein — ideal before bed</div></div><div><div class="pg">22g</div><div class="pgunit">protein</div></div></div>
+    <div class="pfood" data-cat="eggs" data-name="low fat milk"><div class="pico">🥛</div><div class="pinfo"><div class="pname">Low-fat milk</div><div class="pserving">250ml / 1 glass</div><div class="ptag">Convenient protein boost. Add to coffee.</div></div><div><div class="pg">9g</div><div class="pgunit">protein</div></div></div>
+    <!-- Plant -->
+    <div class="pfood" data-cat="plant" data-name="tempeh"><div class="pico">🟫</div><div class="pinfo"><div class="pname">Tempeh</div><div class="pserving">100g</div><div class="ptag">Best plant protein in Malaysia. Fermented = easier digestion</div></div><div><div class="pg">19g</div><div class="pgunit">protein</div></div></div>
+    <div class="pfood" data-cat="plant" data-name="tofu firm"><div class="pico">⬜</div><div class="pinfo"><div class="pname">Firm tofu</div><div class="pserving">100g</div><div class="ptag">Versatile. Higher protein than silken tofu.</div></div><div><div class="pg">8g</div><div class="pgunit">protein</div></div></div>
+    <div class="pfood" data-cat="plant" data-name="edamame"><div class="pico">🫛</div><div class="pinfo"><div class="pname">Edamame</div><div class="pserving">1 cup cooked (155g)</div><div class="ptag">Complete plant protein. Good pre-gym snack.</div></div><div><div class="pg">17g</div><div class="pgunit">protein</div></div></div>
+    <div class="pfood" data-cat="plant" data-name="lentils dal"><div class="pico">🫘</div><div class="pinfo"><div class="pname">Lentils / Dal</div><div class="pserving">1 cup cooked (200g)</div><div class="ptag">Commonly available with roti canai. Also high in fibre.</div></div><div><div class="pg">18g</div><div class="pgunit">protein</div></div></div>
+    <!-- Supplements -->
+    <div class="pfood" data-cat="supp" data-name="whey protein"><div class="pico">💪</div><div class="pinfo"><div class="pname">Whey protein (concentrate)</div><div class="pserving">1 scoop / ~30g powder</div><div class="ptag">Post-workout. Fast absorption. Buy 2.5–5kg on Shopee.</div></div><div><div class="pg">24g</div><div class="pgunit">protein</div></div></div>
+    <div class="pfood" data-cat="supp" data-name="whey isolate"><div class="pico">💪</div><div class="pinfo"><div class="pname">Whey isolate</div><div class="pserving">1 scoop / ~30g powder</div><div class="ptag">Lower fat/carb than concentrate. Better for cut phase.</div></div><div><div class="pg">27g</div><div class="pgunit">protein</div></div></div>
+    <div class="pfood" data-cat="supp" data-name="casein protein"><div class="pico">🌙</div><div class="pinfo"><div class="pname">Casein protein</div><div class="pserving">1 scoop / ~35g powder</div><div class="ptag">Slow-release. Take before bed for overnight muscle synthesis.</div></div><div><div class="pg">24g</div><div class="pgunit">protein</div></div></div>
+    <div class="pfood" data-cat="supp" data-name="protein bar"><div class="pico">🍫</div><div class="pinfo"><div class="pname">Protein bar (Quest / MyProtein)</div><div class="pserving">1 bar / 60g</div><div class="ptag">Convenient. Read label — aim for 20g+ protein, <5g sugar.</div></div><div><div class="pg">21g</div><div class="pgunit">protein</div></div></div>
+    <!-- Malaysian meals -->
+    <div class="pfood" data-cat="my" data-name="nasi lemak chicken"><div class="pico">🍱</div><div class="pinfo"><div class="pname">Nasi lemak + ayam goreng</div><div class="pserving">1 standard plate</div><div class="ptag">Skip the sambal if cutting. Chicken is the protein here.</div></div><div><div class="pg">28g</div><div class="pgunit">protein</div></div></div>
+    <div class="pfood" data-cat="my" data-name="chicken rice nasi ayam"><div class="pico">🍚</div><div class="pinfo"><div class="pname">Nasi ayam (Hainanese chicken rice)</div><div class="pserving">1 plate, double chicken</div><div class="ptag">Order double chicken, half rice. Best macro hawker meal.</div></div><div><div class="pg">42g</div><div class="pgunit">protein</div></div></div>
+    <div class="pfood" data-cat="my" data-name="bak kut teh"><div class="pico">🍲</div><div class="pinfo"><div class="pname">Bak kut teh (dry/soup)</div><div class="pserving">1 claypot, pork ribs</div><div class="ptag">High protein, moderate fat. Skip the tofu puffs (fat bombs).</div></div><div><div class="pg">35g</div><div class="pgunit">protein</div></div></div>
+    <div class="pfood" data-cat="my" data-name="pan mee fish soup"><div class="pico">🍜</div><div class="pinfo"><div class="pname">Pan mee / fish soup noodles</div><div class="pserving">1 bowl, add extra egg</div><div class="ptag">Relatively lean. Add extra egg for protein boost (+6g).</div></div><div><div class="pg">22g</div><div class="pgunit">protein</div></div></div>
+    <div class="pfood" data-cat="my" data-name="mixed rice nasi campur economy"><div class="pico">🍛</div><div class="pinfo"><div class="pname">Economy rice (nasi campur)</div><div class="pserving">2 protein choices + veg</div><div class="ptag">Choose 2 meat/fish items. Control your rice portion.</div></div><div><div class="pg">38g</div><div class="pgunit">protein</div></div></div>
+    <div class="pfood" data-cat="my" data-name="roti canai dhal"><div class="pico">🫓</div><div class="pinfo"><div class="pname">Roti canai + dhal + egg</div><div class="pserving">2 roti + dhal + 1 egg</div><div class="ptag">High carb. Better as pre-workout breakfast than dinner.</div></div><div><div class="pg">16g</div><div class="pgunit">protein</div></div></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════ PROGRESS ═══════════════════════ -->
+<div class="panel" id="panel-progress">
+  <div class="proto-grid" id="progressStats">
+    <div class="proto-stat"><div class="psl">Start</div><div class="psv">94.0<span style="font-size:11px">kg</span></div></div>
+    <div class="proto-stat"><div class="psl">Current</div><div class="psv" id="currentWt">—</div></div>
+    <div class="proto-stat"><div class="psl">To goal</div><div class="psv" id="toGoal" style="color:var(--accent)">—</div></div>
+  </div>
+
+  <div class="goal-bar-wrap">
+    <div class="gb-label">
+      <span>94kg start</span>
+      <strong id="pctDone">0% to goal</strong>
+      <span>83kg target</span>
+    </div>
+    <div class="gb-track"><div class="gb-fill" id="goalFill" style="width:0%"></div></div>
+  </div>
+
+  <div style="margin-bottom:14px;">
+    <div style="font-size:11px;font-family:'DM Mono',monospace;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;">Log today's weight</div>
+    <div class="weight-entry-row">
+      <input class="weight-input" type="number" step="0.1" min="60" max="150" placeholder="e.g. 93.4" id="wtInput" />
+      <button class="log-btn" onclick="logWeight()">Log weight</button>
+    </div>
+  </div>
+
+  <div class="chart-wrap">
+    <canvas class="chart-canvas" id="wtChart"></canvas>
+    <div class="chart-empty" id="chartEmpty">Log at least 2 weigh-ins to see your trend</div>
+  </div>
+
+  <div class="slabel">Weigh-in log</div>
+  <div class="log-list" id="logList"></div>
+
+  <div style="margin-top:20px;padding:14px 16px;background:var(--surface2);border-radius:var(--r);border:1px solid var(--border);font-size:12px;color:var(--muted);line-height:1.7;">
+    <strong style="color:var(--text);font-weight:500;">Weigh-in rules for accuracy</strong><br>
+    Same time every day — Sunday morning works best. Post-bathroom, pre-breakfast. Wear the same amount of clothing. Weight fluctuates 1–2kg daily from water, food, and sodium. The trend over 7–10 days is what matters — not any single reading.
+  </div>
+</div>
+
+<!-- ═══════════════════════ PROTOCOL ═══════════════════════ -->
+<div class="panel" id="panel-protocol">
+  <div class="po-card">
+    <h3>Progressive overload — double progression</h3>
+    <div class="po-steps">
+      <div class="po-step"><div class="num">01</div><div class="lbl">Work within prescribed rep range (e.g., 8–12)</div></div>
+      <div class="po-step"><div class="num">02</div><div class="lbl">Hit the top of the range for 2 consecutive sessions → add weight</div></div>
+      <div class="po-step"><div class="num">03</div><div class="lbl">Compounds +2.5kg, isolation +1kg. Drop back to bottom of rep range</div></div>
+      <div class="po-step"><div class="num">04</div><div class="lbl">Repeat. This rule drives 80% of physique progress</div></div>
+    </div>
+  </div>
+  <div class="slabel">RPE guide</div>
+  <div class="rpe-table">
+    <div class="rpe-row"><div class="rpe-num" style="color:var(--muted)">7</div><div class="rpe-desc">Could do 3+ more reps. Too easy — add weight or reduce rest time.</div></div>
+    <div class="rpe-row"><div class="rpe-num" style="color:var(--accent)">8</div><div class="rpe-desc">Could do 2 more reps. The sweet spot for hypertrophy stimulus.</div></div>
+    <div class="rpe-row"><div class="rpe-num" style="color:var(--accent)">9</div><div class="rpe-desc">Could do 1 more rep. Reserve for compound lifts only.</div></div>
+    <div class="rpe-row" style="border-color:rgba(232,92,92,.3);background:var(--red-dim);"><div class="rpe-num" style="color:var(--red)">10</div><div class="rpe-desc" style="color:var(--red)">Absolute failure. Avoid at 43 — recovery cost is too high.</div></div>
+  </div>
+  <div class="slabel">4-week wave structure</div>
+  <div class="week-grid">
+    <div class="wcard"><div class="wt">Week 1</div><div class="wn">Foundation</div><div class="wd">Learn movements. Establish baseline. RPE 7. No ego lifting.</div></div>
+    <div class="wcard"><div class="wt">Week 2</div><div class="wn">Accumulation</div><div class="wd">Add weight where you hit top rep range. RPE 7–8.</div></div>
+    <div class="wcard"><div class="wt">Week 3</div><div class="wn">Intensification</div><div class="wd">Push RPE 8–9. Hard week. The stimulus that drives adaptation.</div></div>
+    <div class="wcard deload-card"><div class="wt">Week 4 — Deload</div><div class="wn" style="color:var(--warn)">Recovery</div><div class="wd">50% load. RPE 4–5. Supercompensation happens here. Do not skip.</div></div>
+  </div>
+  <div class="slabel">Weekly schedule</div>
+  <div class="sched-row"><div class="sd">Mon</div><div>Day 1 — Upper body (Hypertrophy + Power)</div></div>
+  <div class="sched-row"><div class="sd rest">Tue</div><div style="color:var(--muted)">Tennis conditioning A or rest</div></div>
+  <div class="sched-row"><div class="sd">Wed</div><div>Day 2 — Lower body + Explosive power</div></div>
+  <div class="sched-row"><div class="sd rest">Thu</div><div style="color:var(--muted)">Tennis conditioning B or rest</div></div>
+  <div class="sched-row"><div class="sd">Fri</div><div>Day 3 — V-Taper (Shoulders + Arms)</div></div>
+  <div class="sched-row"><div class="sd rest">Sat</div><div style="color:var(--muted)">Tennis practice or optional arms/abs</div></div>
+  <div class="sched-row"><div class="sd rest">Sun</div><div style="color:var(--muted)">Active recovery — walk, stretch, mobility</div></div>
+  <div class="slabel" style="margin-top:22px;">Non-negotiables</div>
+  <div class="rule-card">Log every session. Weight used, reps completed, RPE. Without a log, progressive overload is guesswork.</div>
+  <div class="rule-card">178g protein daily. Non-negotiable on training days. This is what builds the physique — the gym is just the trigger.</div>
+  <div class="rule-card">7–8 hours sleep. Growth hormone peaks during deep sleep. Training without sleep is negative ROI.</div>
+  <div class="rule-card warn-rule">Never skip deload week. At 43, accumulated fatigue is invisible. The deload is where supercompensation happens. Skipping it costs you 2 weeks of gains.</div>
+  <div style="height:16px;"></div>
+</div>
+
+</div><!-- /main -->
+</div><!-- /scroll -->
+
+<script>
+const KEY = 'tc_v3_';
+const save = (k,v) => { try{localStorage.setItem(KEY+k,JSON.stringify(v));}catch(e){} };
+const load = (k,d) => { try{const v=localStorage.getItem(KEY+k);return v!==null?JSON.parse(v):d;}catch(e){return d;} };
+
+let currentTab = 'day1';
+let currentWeek = load('week',1);
+
+/* ── TABS ── */
+function showTab(t) {
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nt').forEach(n=>n.classList.remove('active'));
+  document.getElementById('panel-'+t).classList.add('active');
+  document.querySelector(`[data-tab="${t}"]`).classList.add('active');
+  currentTab = t;
+  updatePbar();
+  if(t==='progress') renderProgress();
+}
+
+/* ── WEEK ── */
+function setWeek(w) {
+  currentWeek = w;
+  save('week',w);
+  document.querySelectorAll('.wp').forEach(p=>p.classList.remove('aw'));
+  document.querySelector(`[data-w="${w}"]`).classList.add('aw');
+  const dl = w===4;
+  document.querySelectorAll('.deload-banner').forEach(b=>b.classList.toggle('visible',dl));
+  const wm = document.getElementById('wave-msg');
+  if(wm) wm.textContent = w===4 ? 'Deload complete. Start Week 1 fresh at higher baseline.' : w===3 ? 'Hardest week done. Deload week next. Do not skip it.' : 'Rest 1–2 days before repeating. Log everything.';
+}
+
+/* ── EXERCISE TOGGLE ── */
+function togEx(el) {
+  el.classList.toggle('done');
+  updatePbar();
+  checkComplete();
+}
+
+/* ── PREHAB TOGGLE ── */
+function togglePre(el) {
+  el.classList.toggle('checked');
+  updatePbar();
+}
+
+/* ── PROGRESS BAR ── */
+function updatePbar() {
+  const p = document.getElementById('panel-'+currentTab);
+  if(!p){document.getElementById('pbar').style.width='0%';return;}
+  const tot = p.querySelectorAll('.ei').length + p.querySelectorAll('.pi').length;
+  const dn = p.querySelectorAll('.ei.done').length + p.querySelectorAll('.pi.checked').length;
+  document.getElementById('pbar').style.width = (tot?Math.round(dn/tot*100):0)+'%';
+}
+
+/* ── COMPLETE CHECK ── */
+function checkComplete() {
+  ['day1','day2','day3'].forEach(d=>{
+    const p=document.getElementById('panel-'+d);
+    if(!p) return;
+    const tot=p.querySelectorAll('.ei').length;
+    const dn=p.querySelectorAll('.ei.done').length;
+    const b=document.getElementById('done-'+d);
+    if(b) b.classList.toggle('visible', tot>0&&dn===tot);
+  });
+}
+
+/* ── RESET ── */
+function resetDay(d) {
+  const p=document.getElementById('panel-'+d);
+  p.querySelectorAll('.ei.done').forEach(e=>e.classList.remove('done'));
+  p.querySelectorAll('.pi.checked').forEach(e=>e.classList.remove('checked'));
+  document.getElementById('done-'+d).classList.remove('visible');
+  updatePbar();
+}
+
+/* ── PROTEIN FILTER ── */
+let activeCat = 'all';
+function filterCat(cat,btn) {
+  activeCat = cat;
+  document.querySelectorAll('.pct').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  applyProteinFilter();
+}
+function filterProteins(q) { applyProteinFilter(q); }
+function applyProteinFilter(q) {
+  q = (q||document.querySelector('.psearch')?.value||'').toLowerCase();
+  document.querySelectorAll('.pfood').forEach(f=>{
+    const catOk = activeCat==='all' || f.dataset.cat===activeCat;
+    const nameOk = !q || f.dataset.name.includes(q) || f.querySelector('.pname').textContent.toLowerCase().includes(q);
+    f.classList.toggle('hidden', !(catOk&&nameOk));
+  });
+}
+
+/* ═══════════════ PROGRESS / WEIGHT LOG ═══════════════ */
+const START = 94.0, GOAL = 83.0;
+let weightLog = load('wlog',[]);
+
+function logWeight() {
+  const inp = document.getElementById('wtInput');
+  const val = parseFloat(inp.value);
+  if(isNaN(val)||val<50||val>200){inp.style.borderColor='var(--red)';setTimeout(()=>inp.style.borderColor='',1200);return;}
+  const today = new Date().toISOString().split('T')[0];
+  weightLog = weightLog.filter(e=>e.date!==today);
+  weightLog.push({date:today,weight:val});
+  weightLog.sort((a,b)=>a.date.localeCompare(b.date));
+  save('wlog',weightLog);
+  inp.value='';
+  renderProgress();
+}
+
+function deleteLog(idx) {
+  weightLog.splice(idx,1);
+  save('wlog',weightLog);
+  renderProgress();
+}
+
+function renderProgress() {
+  const list = document.getElementById('logList');
+  const cur = document.getElementById('currentWt');
+  const tog = document.getElementById('toGoal');
+  const pct = document.getElementById('pctDone');
+  const fill = document.getElementById('goalFill');
+
+  if(weightLog.length===0){
+    list.innerHTML='<div style="font-size:13px;color:var(--muted);padding:12px 0">No entries yet. Log your first weigh-in above.</div>';
+    cur.textContent='—'; tog.textContent='—'; pct.textContent='0% to goal'; fill.style.width='0%';
+    hideChart(); return;
+  }
+
+  const latest = weightLog[weightLog.length-1].weight;
+  const lost = START - latest;
+  const needed = GOAL - START;
+  const progress = Math.max(0,Math.min(100,Math.round(lost/Math.abs(needed)*100)));
+  const remaining = Math.max(0,latest-GOAL);
+
+  cur.textContent = latest.toFixed(1)+'kg';
+  tog.textContent = remaining.toFixed(1)+'kg';
+  pct.textContent = progress+'% to goal';
+  fill.style.width = progress+'%';
+
+  // Render log (newest first)
+  list.innerHTML='';
+  const reversed = [...weightLog].reverse();
+  reversed.forEach((e,i)=>{
+    const origIdx = weightLog.length-1-i;
+    const prev = weightLog[weightLog.length-2-i];
+    let deltaHtml='';
+    if(prev) {
+      const d = e.weight - prev.weight;
+      const sign = d<0?'':'+';
+      const cls = d<0?'delta-good':d>0?'delta-bad':'delta-same';
+      deltaHtml=`<span class="le-delta ${cls}">${sign}${d.toFixed(1)}kg</span>`;
+    }
+    const fmt = new Date(e.date+'T00:00:00').toLocaleDateString('en-MY',{day:'numeric',month:'short'});
+    list.innerHTML+=`<div class="log-entry"><span class="le-date">${fmt}</span>${deltaHtml}<span class="le-weight">${e.weight.toFixed(1)}kg</span><button class="le-del" onclick="deleteLog(${origIdx})">×</button></div>`;
+  });
+
+  drawChart();
+}
+
+function hideChart(){
+  const c=document.getElementById('wtChart');
+  const em=document.getElementById('chartEmpty');
+  c.style.display='none'; em.style.display='block';
+}
+
+function drawChart(){
+  const c=document.getElementById('wtChart');
+  const em=document.getElementById('chartEmpty');
+  if(weightLog.length<2){hideChart();return;}
+  c.style.display='block'; em.style.display='none';
+
+  const dpr=window.devicePixelRatio||1;
+  const W=c.parentElement.clientWidth-32;
+  const H=180;
+  c.width=W*dpr; c.height=H*dpr;
+  c.style.width=W+'px'; c.style.height=H+'px';
+
+  const ctx=c.getContext('2d');
+  ctx.scale(dpr,dpr);
+  ctx.clearRect(0,0,W,H);
+
+  const weights=weightLog.map(e=>e.weight);
+  const minW=Math.min(...weights,GOAL)-0.5;
+  const maxW=Math.max(...weights,START)+0.5;
+  const pad={l:10,r:10,t:10,b:28};
+  const cW=W-pad.l-pad.r, cH=H-pad.t-pad.b;
+
+  const xPos=i=>(pad.l + i/(weightLog.length-1)*cW);
+  const yPos=w=>(pad.t + (1-(w-minW)/(maxW-minW))*cH);
+
+  // Goal line
+  ctx.strokeStyle='rgba(200,240,78,.25)';
+  ctx.lineWidth=1;
+  ctx.setLineDash([4,4]);
+  const gy=yPos(GOAL);
+  ctx.beginPath(); ctx.moveTo(pad.l,gy); ctx.lineTo(W-pad.r,gy); ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Area fill
+  const grad=ctx.createLinearGradient(0,pad.t,0,H-pad.b);
+  grad.addColorStop(0,'rgba(200,240,78,.18)');
+  grad.addColorStop(1,'rgba(200,240,78,0)');
+  ctx.fillStyle=grad;
+  ctx.beginPath();
+  ctx.moveTo(xPos(0),yPos(weights[0]));
+  weights.forEach((w,i)=>ctx.lineTo(xPos(i),yPos(w)));
+  ctx.lineTo(xPos(weights.length-1),H-pad.b);
+  ctx.lineTo(xPos(0),H-pad.b);
+  ctx.closePath(); ctx.fill();
+
+  // Line
+  ctx.strokeStyle='#c8f04e';
+  ctx.lineWidth=2;
+  ctx.lineJoin='round';
+  ctx.beginPath();
+  weights.forEach((w,i)=>i===0?ctx.moveTo(xPos(i),yPos(w)):ctx.lineTo(xPos(i),yPos(w)));
+  ctx.stroke();
+
+  // Dots
+  weights.forEach((w,i)=>{
+    ctx.beginPath();
+    ctx.arc(xPos(i),yPos(w),3.5,0,Math.PI*2);
+    ctx.fillStyle='#c8f04e';
+    ctx.fill();
+  });
+
+  // Date labels (first, last)
+  ctx.fillStyle='rgba(136,136,136,.8)';
+  ctx.font=`${10*dpr}px/1 'DM Mono',monospace`;
+  ctx.scale(1/dpr,1/dpr);
+  ctx.font=`10px 'DM Mono',monospace`;
+  const fmt=d=>new Date(d+'T00:00:00').toLocaleDateString('en-MY',{day:'numeric',month:'short'});
+  ctx.textAlign='left';
+  ctx.fillText(fmt(weightLog[0].date), pad.l, H-8);
+  ctx.textAlign='right';
+  ctx.fillText(fmt(weightLog[weightLog.length-1].date), W-pad.r, H-8);
+
+  // Goal label
+  ctx.fillStyle='rgba(200,240,78,.6)';
+  ctx.textAlign='right';
+  ctx.fillText('83kg goal', W-pad.r, gy-4);
+}
+
+/* ── INIT ── */
+setWeek(currentWeek);
+if(currentTab==='progress') renderProgress();
+</script>
+</body>
+</html>
